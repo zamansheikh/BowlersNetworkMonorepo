@@ -1,0 +1,33 @@
+{
+  "name": "@bowlersnetwork/bowl-ques",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 4007 --turbopack",
+    "build": "next build",
+    "start": "next start --port 4007",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bowlersnetwork/api-client": "workspace:*",
+    "@bowlersnetwork/auth": "workspace:*",
+    "@bowlersnetwork/types": "workspace:*",
+    "@bowlersnetwork/ui": "workspace:*",
+    "@bowlersnetwork/utils": "workspace:*",
+    "@bowlersnetwork/validators": "workspace:*",
+    "lucide-react": "^1.7.0",
+    "next": "^16.0.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@bowlersnetwork/config-typescript": "workspace:*",
+    "@bowlersnetwork/config-tailwind": "workspace:*",
+    "@tailwindcss/postcss": "^4.1.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tailwindcss": "^4.1.0",
+    "typescript": "^5.9.0"
+  }
+}

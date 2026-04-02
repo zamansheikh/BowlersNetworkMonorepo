@@ -1,0 +1,29 @@
+{
+  "name": "bowlersnetwork",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "type-check": "turbo type-check",
+    "clean": "turbo clean",
+    "dev:amateur": "turbo dev --filter=@bowlersnetwork/amateur-player",
+    "dev:pro": "turbo dev --filter=@bowlersnetwork/pro-player",
+    "dev:center": "turbo dev --filter=@bowlersnetwork/bowling-center",
+    "dev:manufacturer": "turbo dev --filter=@bowlersnetwork/bowling-manufacturers",
+    "dev:tournament": "turbo dev --filter=@bowlersnetwork/tournament-director",
+    "dev:staffs": "turbo dev --filter=@bowlersnetwork/staffs",
+    "dev:ques": "turbo dev --filter=@bowlersnetwork/bowl-ques"
+  },
+  "devDependencies": {
+    "turbo": "^2.9.0",
+    "typescript": "^5.9.0"
+  },
+  "packageManager": "pnpm@10.30.1",
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "sharp"]
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
