@@ -32,5 +32,7 @@ jobs:
             # Build amateur-player
             pnpm --filter @bowlersnetwork/amateur-player build
 
-            # Restart the app via PM2
-            pm2 restart amateur-player --update-env || pm2 start ecosystem.config.cjs --only amateur-player
+            # Stop & delete the old PM2 process, then start fresh from ecosystem config
+            pm2 delete amateur-player 2>/dev/null || true
+            pm2 start ecosystem.config.cjs --only amateur-player
+            pm2 save
