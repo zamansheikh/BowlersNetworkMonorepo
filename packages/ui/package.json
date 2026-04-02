@@ -9,6 +9,7 @@
     "./*.css": "./src/*.css"
   },
   "dependencies": {
+    "@bowlersnetwork/utils": "workspace:*",
     "lucide-react": "^1.7.0"
   },
   "peerDependencies": {
@@ -17,6 +18,8 @@
   },
   "devDependencies": {
     "@bowlersnetwork/config-typescript": "workspace:*",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "typescript": "^5.9.0"
