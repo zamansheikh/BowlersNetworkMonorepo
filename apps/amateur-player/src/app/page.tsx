@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import {
   Target,
@@ -16,7 +19,7 @@ import {
 
 /* -------------------------------------------------------------------------- */
 /*  Landing page — unauthenticated visitors                                   */
-/*  Entirely server-rendered; no client state needed.                         */
+/*  Redirects logged-in users to /feed.                                      */
 /* -------------------------------------------------------------------------- */
 
 const features = [
@@ -90,6 +93,19 @@ const steps = [
 ];
 
 export default function LandingPage() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      window.location.href = "/feed";
+      return;
+    }
+    setReady(true);
+  }, []);
+
+  if (!ready) return null;
+
   return (
     <div className="min-h-screen bg-surface text-text-primary">
       {/* ================================================================== */}
@@ -401,16 +417,9 @@ export default function LandingPage() {
                 Company
               </h4>
               <ul className="mt-4 space-y-3">
-                {["About", "Blog", "Careers", "Press"].map((item) => (
-                  <li key={item}>
-                    <a
-                      href="#"
-                      className="text-sm text-text-secondary transition-colors hover:text-brand"
-                    >
-                      {item}
-                    </a>
-                  </li>
-                ))}
+                <li><a href="/about" className="text-sm text-text-secondary transition-colors hover:text-brand">About</a></li>
+                <li><a href="/help" className="text-sm text-text-secondary transition-colors hover:text-brand">Help</a></li>
+                <li><a href="/careers" className="text-sm text-text-secondary transition-colors hover:text-brand">Careers</a></li>
               </ul>
             </div>
 
@@ -420,18 +429,8 @@ export default function LandingPage() {
                 Legal
               </h4>
               <ul className="mt-4 space-y-3">
-                {["Privacy Policy", "Terms of Service", "Cookie Policy"].map(
-                  (item) => (
-                    <li key={item}>
-                      <a
-                        href="#"
-                        className="text-sm text-text-secondary transition-colors hover:text-brand"
-                      >
-                        {item}
-                      </a>
-                    </li>
-                  ),
-                )}
+                <li><a href="/privacy" className="text-sm text-text-secondary transition-colors hover:text-brand">Privacy</a></li>
+                <li><a href="/terms" className="text-sm text-text-secondary transition-colors hover:text-brand">Terms</a></li>
               </ul>
             </div>
           </div>
@@ -439,7 +438,7 @@ export default function LandingPage() {
           {/* Bottom bar */}
           <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 sm:flex-row">
             <p className="text-sm text-text-muted">
-              &copy; {new Date().getFullYear()} BowlersNetwork Inc. All rights reserved.
+              &copy; 2026 BowlersNetwork, Inc.
             </p>
             <div className="flex gap-6">
               <a href="#" className="text-text-muted transition-colors hover:text-brand" aria-label="Twitter">

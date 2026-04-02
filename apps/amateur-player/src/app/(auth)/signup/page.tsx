@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -20,7 +20,18 @@ const BASE_URL =
 type Step = "form" | "otp" | "success";
 
 export default function SignUpPage() {
+  const [ready, setReady] = useState(false);
   const [step, setStep] = useState<Step>("form");
+
+  /* Redirect if already logged in */
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      window.location.href = "/feed";
+      return;
+    }
+    setReady(true);
+  }, []);
 
   // Form fields
   const [firstName, setFirstName] = useState("");
@@ -164,6 +175,8 @@ export default function SignUpPage() {
       setIsLoading(false);
     }
   }
+
+  if (!ready) return null;
 
   return (
     <div className="min-h-screen flex">

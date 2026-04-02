@@ -1,7 +1,8 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Menu, Search, Bell } from "lucide-react";
+import { Menu, Search, Bell, LogOut, User } from "lucide-react";
 
 /* -------------------------------------------------------------------------- */
 /*  Types                                                                      */
@@ -12,11 +13,68 @@ export interface TopbarProps {
   onMobileMenuToggle: () => void;
 }
 
+type UserInfo = {
+  first_name: string;
+  last_name: string;
+  profile_picture_url: string | null;
+} | null;
+
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "https://backend.bowlersnetwork.com";
+
 /* -------------------------------------------------------------------------- */
 /*  Topbar                                                                     */
 /* -------------------------------------------------------------------------- */
 
 export function Topbar({ sidebarCollapsed, onMobileMenuToggle }: TopbarProps) {
+  const [user, setUser] = useState<UserInfo>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  /* Fetch basic user info for the avatar */
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+
+    fetch(`${BASE_URL}/api/profile`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.user) {
+          setUser({
+            first_name: data.user.first_name ?? "",
+            last_name: data.user.last_name ?? "",
+            profile_picture_url:
+              data.profile_media?.profile_picture_url ?? null,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  /* Close dropdown on outside click */
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    if (menuOpen) {
+      document.addEventListener("mousedown", handleClick);
+      return () => document.removeEventListener("mousedown", handleClick);
+    }
+  }, [menuOpen]);
+
+  const initials = user
+    ? `${user.first_name?.[0] ?? ""}${user.last_name?.[0] ?? ""}`
+    : "";
+
+  function handleLogout() {
+    localStorage.removeItem("access_token");
+    window.location.href = "/signin";
+  }
+
   return (
     <header
       className={[
@@ -64,7 +122,8 @@ export function Topbar({ sidebarCollapsed, onMobileMenuToggle }: TopbarProps) {
         {/* Right: Notifications + Avatar */}
         <div className="flex shrink-0 items-center gap-3">
           {/* Notification bell */}
-          <button
+          <Link
+            href="/notifications"
             className={[
               "relative flex h-9 w-9 items-center justify-center rounded-lg",
               "text-text-secondary transition-colors duration-150",
@@ -73,22 +132,60 @@ export function Topbar({ sidebarCollapsed, onMobileMenuToggle }: TopbarProps) {
             aria-label="Notifications"
           >
             <Bell size={20} />
-            {/* Unread badge dot */}
             <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-error ring-2 ring-surface" />
-          </button>
-
-          {/* User avatar — links to profile */}
-          <Link
-            href="/profile"
-            className={[
-              "flex h-9 w-9 items-center justify-center rounded-full",
-              "bg-brand text-xs font-semibold text-white",
-              "transition-shadow duration-150 hover:ring-2 hover:ring-brand/30",
-            ].join(" ")}
-            aria-label="View profile"
-          >
-            JD
           </Link>
+
+          {/* User avatar + dropdown */}
+          <div ref={menuRef} className="relative">
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              className={[
+                "flex h-9 w-9 items-center justify-center rounded-full overflow-hidden",
+                "transition-shadow duration-150 hover:ring-2 hover:ring-brand/30",
+                user?.profile_picture_url
+                  ? "ring-1 ring-border"
+                  : "bg-brand text-xs font-semibold text-white",
+              ].join(" ")}
+              aria-label="User menu"
+            >
+              {user?.profile_picture_url ? (
+                <img
+                  src={user.profile_picture_url}
+                  alt="Avatar"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                initials || <User size={16} />
+              )}
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 top-11 z-50 w-48 rounded-lg border border-border bg-surface py-1 shadow-lg">
+                {user && (
+                  <div className="border-b border-border px-4 py-2.5">
+                    <p className="text-sm font-semibold text-text-primary truncate">
+                      {user.first_name} {user.last_name}
+                    </p>
+                  </div>
+                )}
+                <Link
+                  href="/profile"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-text-secondary transition-colors hover:bg-surface-secondary hover:text-text-primary"
+                >
+                  <User size={16} />
+                  Profile
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-error transition-colors hover:bg-error/5"
+                >
+                  <LogOut size={16} />
+                  Log Out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2, LogIn } from "lucide-react";
@@ -9,11 +9,22 @@ const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "https://backend.bowlersnetwork.com";
 
 export default function SignInPage() {
+  const [ready, setReady] = useState(false);
   const [credential, setCredential] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  /* Redirect if already logged in */
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      window.location.href = "/feed";
+      return;
+    }
+    setReady(true);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -52,6 +63,8 @@ export default function SignInPage() {
       setIsLoading(false);
     }
   }
+
+  if (!ready) return null;
 
   return (
     <div className="min-h-screen flex">
