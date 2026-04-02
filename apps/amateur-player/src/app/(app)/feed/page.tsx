@@ -1,178 +1,44 @@
 "use client";
 
-import { useState } from "react";
-import { TrendingUp, UserPlus, Hash, Flame } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  TrendingUp,
+  UserPlus,
+  Hash,
+  Flame,
+  RefreshCw,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
 import CreatePost from "@/components/create-post";
 import PostCard, { type Post } from "@/components/post-card";
 
 /* -------------------------------------------------------------------------- */
-/*  Mock Data                                                                 */
+/*  API Config                                                                */
 /* -------------------------------------------------------------------------- */
 
-const MOCK_POSTS: Post[] = [
-  {
-    id: "p1",
-    author_name: "Marcus Williams",
-    author_username: "mwilliams",
-    author_initials: "MW",
-    avatar_color: "#5145cd",
-    timestamp: "2h ago",
-    audience: "public",
-    content:
-      "Just rolled my first 300 game at Sunset Lanes! Been chasing this for 3 years and it finally happened. The whole house erupted when that last pin fell. Shoutout to my teammates for keeping the energy up all night. Can't stop shaking! 🎳🔥",
-    media_url: null,
-    reactions: { like: 142, fire: 87, strike: 234, clap: 56, wow: 31 },
-    comment_count: 48,
-    share_count: 12,
-    comments: [
-      {
-        id: "c1",
-        author_name: "Sarah Chen",
-        author_username: "schen",
-        author_initials: "SC",
-        avatar_color: "#e11d48",
-        text: "Congrats Marcus! That's incredible. Next stop: 800 series!",
-        timestamp: "1h ago",
-      },
-      {
-        id: "c2",
-        author_name: "Jake Torres",
-        author_username: "jtorres",
-        author_initials: "JT",
-        avatar_color: "#0891b2",
-        text: "I was there! The energy was unreal. Well deserved 🙌",
-        timestamp: "45m ago",
-      },
-    ],
-    user_reaction: null,
-  },
-  {
-    id: "p2",
-    author_name: "ProShop Dave",
-    author_username: "proshop_dave",
-    author_initials: "PD",
-    avatar_color: "#d97706",
-    timestamp: "4h ago",
-    audience: "public",
-    content:
-      "New ball review: Storm Phaze V. Took it for a spin on a medium-heavy pattern tonight and I'm genuinely impressed. The midlane read is incredibly smooth, and the backend is controlled but powerful. If you liked the Phaze IV you're going to love this. Full writeup coming this weekend with video footage and comparison charts.",
-    media_url: "https://placehold.co/800x400/f3f4f6/99a1af?text=Storm+Phaze+V+Review",
-    reactions: { like: 89, fire: 45, strike: 12, clap: 23, wow: 8 },
-    comment_count: 31,
-    share_count: 7,
-    comments: [
-      {
-        id: "c3",
-        author_name: "Amy Rodriguez",
-        author_username: "amyrodz",
-        author_initials: "AR",
-        avatar_color: "#7c3aed",
-        text: "Been waiting for this review! How does it compare to the IQ Tour?",
-        timestamp: "3h ago",
-      },
-    ],
-    user_reaction: "like",
-  },
-  {
-    id: "p3",
-    author_name: "Sunset Lanes",
-    author_username: "sunsetlanes",
-    author_initials: "SL",
-    avatar_color: "#059669",
-    timestamp: "6h ago",
-    audience: "public",
-    content:
-      "🏆 League Registration Open! Our Fall Classic league starts September 15th. 16-week season, Tuesday nights, 7pm start. Handicapped format — all skill levels welcome. Teams of 4. Early bird discount ends September 1st. DM us or stop by the front desk to register!",
-    media_url: null,
-    reactions: { like: 34, fire: 12, strike: 5, clap: 18, wow: 2 },
-    comment_count: 15,
-    share_count: 22,
-    comments: [
-      {
-        id: "c4",
-        author_name: "Tony Kim",
-        author_username: "tkim",
-        author_initials: "TK",
-        avatar_color: "#2563eb",
-        text: "Signing up tonight! Anyone looking for a 4th?",
-        timestamp: "5h ago",
-      },
-      {
-        id: "c5",
-        author_name: "Lisa Park",
-        author_username: "lisap",
-        author_initials: "LP",
-        avatar_color: "#db2777",
-        text: "Count me in. What's the cost per person?",
-        timestamp: "4h ago",
-      },
-    ],
-    user_reaction: null,
-  },
-  {
-    id: "p4",
-    author_name: "Sarah Chen",
-    author_username: "schen",
-    author_initials: "SC",
-    avatar_color: "#e11d48",
-    timestamp: "8h ago",
-    audience: "followers",
-    content:
-      "Working on my spare game this week. Changed my approach angle for the 10-pin and hit 9 out of 10 tonight. Small wins add up. 📈",
-    media_url: null,
-    reactions: { like: 56, fire: 8, strike: 3, clap: 42, wow: 1 },
-    comment_count: 9,
-    share_count: 1,
-    comments: [
-      {
-        id: "c6",
-        author_name: "Marcus Williams",
-        author_username: "mwilliams",
-        author_initials: "MW",
-        avatar_color: "#5145cd",
-        text: "That 10-pin is a menace. What angle are you throwing now?",
-        timestamp: "7h ago",
-      },
-    ],
-    user_reaction: "clap",
-  },
-  {
-    id: "p5",
-    author_name: "BowlersNetwork",
-    author_username: "bowlersnetwork",
-    author_initials: "BN",
-    avatar_color: "#6fa332",
-    timestamp: "12h ago",
-    audience: "public",
-    content:
-      "📊 Weekend Stats Recap: Over 2,400 games logged this weekend across the network. Average score: 178. Top performer: @mwilliams with a perfect 300! The community is growing fast — welcome to all 150+ new bowlers who joined this week. Keep those strikes coming!",
-    media_url: "https://placehold.co/800x400/f3f4f6/99a1af?text=Weekend+Stats+Dashboard",
-    reactions: { like: 203, fire: 67, strike: 89, clap: 45, wow: 23 },
-    comment_count: 72,
-    share_count: 34,
-    comments: [
-      {
-        id: "c7",
-        author_name: "Jake Torres",
-        author_username: "jtorres",
-        author_initials: "JT",
-        avatar_color: "#0891b2",
-        text: "Love these weekly recaps! Can you add average by lane condition?",
-        timestamp: "11h ago",
-      },
-      {
-        id: "c8",
-        author_name: "ProShop Dave",
-        author_username: "proshop_dave",
-        author_initials: "PD",
-        avatar_color: "#d97706",
-        text: "The growth is real. Excited to see where this goes!",
-        timestamp: "10h ago",
-      },
-    ],
-    user_reaction: null,
-  },
-];
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "https://backend.bowlersnetwork.com";
+
+function getAuthHeaders(): HeadersInit {
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("access_token")
+      : null;
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
+function handleUnauthorized() {
+  localStorage.removeItem("access_token");
+  window.location.href = "/signin";
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Sidebar Data (static for now)                                             */
+/* -------------------------------------------------------------------------- */
 
 const MOCK_SUGGESTIONS = [
   {
@@ -200,11 +66,168 @@ const MOCK_TRENDING = [
 ];
 
 /* -------------------------------------------------------------------------- */
+/*  Skeleton Loader                                                           */
+/* -------------------------------------------------------------------------- */
+
+function PostSkeleton() {
+  return (
+    <div className="animate-pulse rounded-xl border border-border bg-surface p-4 shadow-sm">
+      {/* Header */}
+      <div className="flex items-start gap-3">
+        <div className="h-10 w-10 shrink-0 rounded-full bg-surface-secondary" />
+        <div className="flex-1 space-y-2">
+          <div className="h-4 w-32 rounded bg-surface-secondary" />
+          <div className="h-3 w-24 rounded bg-surface-secondary" />
+        </div>
+      </div>
+      {/* Content */}
+      <div className="mt-4 space-y-2">
+        <div className="h-3 w-full rounded bg-surface-secondary" />
+        <div className="h-3 w-full rounded bg-surface-secondary" />
+        <div className="h-3 w-3/4 rounded bg-surface-secondary" />
+      </div>
+      {/* Actions */}
+      <div className="mt-4 flex items-center gap-4">
+        <div className="h-8 w-16 rounded-lg bg-surface-secondary" />
+        <div className="h-8 w-16 rounded-lg bg-surface-secondary" />
+        <div className="h-8 w-16 rounded-lg bg-surface-secondary" />
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Page                                                                      */
 /* -------------------------------------------------------------------------- */
 
 export default function FeedPage() {
-  const [posts] = useState<Post[]>(MOCK_POSTS);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const loadingRef = useRef(false);
+
+  /* ---- Fetch feed ---- */
+  const fetchFeed = useCallback(
+    async (opts: { refresh?: boolean } = {}) => {
+      const { refresh = false } = opts;
+
+      if (loadingRef.current) return;
+      loadingRef.current = true;
+
+      if (refresh) {
+        setIsRefreshing(true);
+      } else if (posts.length === 0) {
+        setIsLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
+
+      setError(null);
+
+      try {
+        const params = new URLSearchParams({ page_size: "20" });
+        if (!refresh && cursor) {
+          params.set("cursor", cursor);
+        }
+
+        const res = await fetch(
+          `${BASE_URL}/api/newsfeed/feed?${params.toString()}`,
+          { headers: getAuthHeaders() }
+        );
+
+        if (res.status === 401) return handleUnauthorized();
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          throw new Error(
+            data?.detail ?? data?.message ?? "Failed to load feed"
+          );
+        }
+
+        const data = await res.json();
+        const newPosts: Post[] = data.posts ?? data.results ?? [];
+
+        if (refresh) {
+          setPosts(newPosts);
+        } else {
+          setPosts((prev) => {
+            /* Deduplicate by id */
+            const existingIds = new Set(prev.map((p) => p.id));
+            const unique = newPosts.filter(
+              (p) => !existingIds.has(p.id)
+            );
+            return [...prev, ...unique];
+          });
+        }
+
+        /* Update cursor for next page */
+        if (newPosts.length > 0) {
+          setCursor(newPosts[newPosts.length - 1].id);
+        }
+        if (newPosts.length < 20) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : "Something went wrong";
+        setError(message);
+      } finally {
+        setIsLoading(false);
+        setIsLoadingMore(false);
+        setIsRefreshing(false);
+        loadingRef.current = false;
+      }
+    },
+    [cursor, posts.length]
+  );
+
+  /* ---- Initial load ---- */
+  useEffect(() => {
+    fetchFeed();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* ---- Infinite scroll via IntersectionObserver ---- */
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          hasMore &&
+          !loadingRef.current
+        ) {
+          fetchFeed();
+        }
+      },
+      { rootMargin: "300px" }
+    );
+
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [fetchFeed, hasMore]);
+
+  /* ---- Refresh ---- */
+  function handleRefresh() {
+    setCursor(null);
+    setHasMore(true);
+    fetchFeed({ refresh: true });
+  }
+
+  /* ---- Post created callback ---- */
+  function handlePostCreated() {
+    setCursor(null);
+    setHasMore(true);
+    fetchFeed({ refresh: true });
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
@@ -214,17 +237,115 @@ export default function FeedPage() {
         {/* ================================================================= */}
         <main className="min-w-0 flex-1 space-y-4">
           {/* Create Post Composer */}
-          <CreatePost />
+          <CreatePost onPostCreated={handlePostCreated} />
 
-          {/* Feed */}
+          {/* Refresh bar */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-text-secondary">
+              Your Feed
+            </h2>
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-brand transition-colors hover:bg-brand/10 disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+              />
+              Refresh
+            </button>
+          </div>
+
+          {/* ---- Loading skeletons (initial load) ---- */}
+          {isLoading && (
+            <div className="space-y-4">
+              <PostSkeleton />
+              <PostSkeleton />
+              <PostSkeleton />
+            </div>
+          )}
+
+          {/* ---- Error state ---- */}
+          {!isLoading && error && posts.length === 0 && (
+            <div className="flex flex-col items-center gap-4 rounded-xl border border-border bg-surface px-6 py-12 text-center shadow-sm">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-error/10">
+                <AlertCircle className="h-7 w-7 text-error" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-text-primary">
+                  Something went wrong
+                </h3>
+                <p className="mt-1 text-sm text-text-muted">{error}</p>
+              </div>
+              <button
+                onClick={handleRefresh}
+                className="rounded-lg bg-brand px-5 py-2 text-sm font-semibold text-text-inverse transition-colors hover:bg-brand-dark"
+              >
+                Try Again
+              </button>
+            </div>
+          )}
+
+          {/* ---- Empty state ---- */}
+          {!isLoading && !error && posts.length === 0 && (
+            <div className="flex flex-col items-center gap-4 rounded-xl border border-border bg-surface px-6 py-12 text-center shadow-sm">
+              <div className="text-5xl">&#127923;</div>
+              <div>
+                <h3 className="text-lg font-semibold text-text-primary">
+                  No posts yet
+                </h3>
+                <p className="mt-1 text-sm text-text-muted">
+                  Follow some bowlers or create your first post to get
+                  your feed started!
+                </p>
+              </div>
+              <button
+                onClick={handleRefresh}
+                className="rounded-lg border border-brand px-5 py-2 text-sm font-semibold text-brand transition-colors hover:bg-brand hover:text-text-inverse"
+              >
+                Refresh Feed
+              </button>
+            </div>
+          )}
+
+          {/* ---- Feed Posts ---- */}
           {posts.map((post) => (
             <PostCard key={post.id} post={post} />
           ))}
 
-          {/* End of feed */}
-          <div className="py-8 text-center text-sm text-text-muted">
-            You&apos;re all caught up! Check back later for new posts.
-          </div>
+          {/* ---- Inline error (when loading more fails) ---- */}
+          {error && posts.length > 0 && (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-border bg-surface px-4 py-3 text-sm text-text-muted shadow-sm">
+              <AlertCircle className="h-4 w-4 text-error" />
+              <span>Failed to load more posts.</span>
+              <button
+                onClick={() => fetchFeed()}
+                className="font-medium text-brand hover:underline"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
+          {/* ---- Loading more spinner ---- */}
+          {isLoadingMore && (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-brand" />
+            </div>
+          )}
+
+          {/* ---- Infinite scroll sentinel ---- */}
+          {hasMore && !isLoading && (
+            <div ref={sentinelRef} className="h-1" />
+          )}
+
+          {/* ---- End of feed ---- */}
+          {!hasMore && posts.length > 0 && (
+            <div className="py-8 text-center text-sm text-text-muted">
+              You&apos;re all caught up! Check back later for new
+              posts.
+            </div>
+          )}
         </main>
 
         {/* ================================================================= */}
@@ -247,8 +368,12 @@ export default function FeedPage() {
                     {user.initials}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium text-text-primary">{user.name}</div>
-                    <div className="truncate text-xs text-text-muted">{user.bio}</div>
+                    <div className="truncate text-sm font-medium text-text-primary">
+                      {user.name}
+                    </div>
+                    <div className="truncate text-xs text-text-muted">
+                      {user.bio}
+                    </div>
                   </div>
                   <button className="shrink-0 rounded-full border border-brand px-3 py-1 text-xs font-semibold text-brand transition-colors hover:bg-brand hover:text-text-inverse">
                     Follow
@@ -281,8 +406,12 @@ export default function FeedPage() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium text-text-primary">#{topic.tag}</div>
-                    <div className="text-xs text-text-muted">{topic.posts} posts</div>
+                    <div className="text-sm font-medium text-text-primary">
+                      #{topic.tag}
+                    </div>
+                    <div className="text-xs text-text-muted">
+                      {topic.posts} posts
+                    </div>
                   </div>
                 </button>
               ))}
@@ -295,10 +424,18 @@ export default function FeedPage() {
           {/* ---- Footer links ---- */}
           <div className="px-2 text-xs text-text-muted">
             <div className="flex flex-wrap gap-x-3 gap-y-1">
-              <a href="#" className="hover:underline">About</a>
-              <a href="#" className="hover:underline">Help</a>
-              <a href="#" className="hover:underline">Privacy</a>
-              <a href="#" className="hover:underline">Terms</a>
+              <a href="#" className="hover:underline">
+                About
+              </a>
+              <a href="#" className="hover:underline">
+                Help
+              </a>
+              <a href="#" className="hover:underline">
+                Privacy
+              </a>
+              <a href="#" className="hover:underline">
+                Terms
+              </a>
             </div>
             <p className="mt-2">&copy; 2026 BowlersNetwork, Inc.</p>
           </div>

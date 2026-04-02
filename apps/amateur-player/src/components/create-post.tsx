@@ -16,16 +16,61 @@ import {
 } from "lucide-react";
 
 /* -------------------------------------------------------------------------- */
+/*  API Config                                                                */
+/* -------------------------------------------------------------------------- */
+
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "https://backend.bowlersnetwork.com";
+
+function getAuthHeaders(): HeadersInit {
+  const token = localStorage.getItem("access_token");
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
+function handleUnauthorized() {
+  localStorage.removeItem("access_token");
+  window.location.href = "/signin";
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Types                                                                     */
 /* -------------------------------------------------------------------------- */
 
 export type Audience = "public" | "followers" | "center" | "private";
 
-const AUDIENCE_OPTIONS: { value: Audience; label: string; icon: typeof Globe; description: string }[] = [
-  { value: "public", label: "Public", icon: Globe, description: "Anyone on BowlersNetwork" },
-  { value: "followers", label: "Followers", icon: Users, description: "People who follow you" },
-  { value: "center", label: "Center", icon: Building2, description: "Your bowling center community" },
-  { value: "private", label: "Private", icon: Lock, description: "Only you" },
+const AUDIENCE_OPTIONS: {
+  value: Audience;
+  label: string;
+  icon: typeof Globe;
+  description: string;
+}[] = [
+  {
+    value: "public",
+    label: "Public",
+    icon: Globe,
+    description: "Anyone on BowlersNetwork",
+  },
+  {
+    value: "followers",
+    label: "Followers",
+    icon: Users,
+    description: "People who follow you",
+  },
+  {
+    value: "center",
+    label: "Center",
+    icon: Building2,
+    description: "Your bowling center community",
+  },
+  {
+    value: "private",
+    label: "Private",
+    icon: Lock,
+    description: "Only you",
+  },
 ];
 
 const ACTION_BUTTONS = [
@@ -39,12 +84,17 @@ const ACTION_BUTTONS = [
 /*  Component                                                                 */
 /* -------------------------------------------------------------------------- */
 
-export default function CreatePost({ onPostCreated }: { onPostCreated?: () => void }) {
+export default function CreatePost({
+  onPostCreated,
+}: {
+  onPostCreated?: () => void;
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [caption, setCaption] = useState("");
   const [audience, setAudience] = useState<Audience>("public");
   const [showAudienceMenu, setShowAudienceMenu] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
+  const [error, setError] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -52,7 +102,8 @@ export default function CreatePost({ onPostCreated }: { onPostCreated?: () => vo
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + "px";
+      textareaRef.current.style.height =
+        textareaRef.current.scrollHeight + "px";
     }
   }, [caption]);
 
@@ -78,7 +129,10 @@ export default function CreatePost({ onPostCreated }: { onPostCreated?: () => vo
       if (showAudienceMenu) setShowAudienceMenu(false);
     }
     if (showAudienceMenu) {
-      setTimeout(() => document.addEventListener("click", handleClick), 0);
+      setTimeout(
+        () => document.addEventListener("click", handleClick),
+        0
+      );
       return () => document.removeEventListener("click", handleClick);
     }
   }, [showAudienceMenu]);
@@ -86,17 +140,42 @@ export default function CreatePost({ onPostCreated }: { onPostCreated?: () => vo
   async function handleSubmit() {
     if (!caption.trim() || isPosting) return;
     setIsPosting(true);
+    setError("");
 
-    // Simulated API call — replace with real fetch when ready
-    await new Promise((r) => setTimeout(r, 800));
+    try {
+      const res = await fetch(`${BASE_URL}/api/newsfeed/create/text`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          caption: caption.trim(),
+          audience,
+        }),
+      });
 
-    setCaption("");
-    setIsExpanded(false);
-    setIsPosting(false);
-    onPostCreated?.();
+      if (res.status === 401) return handleUnauthorized();
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(
+          data?.detail ?? data?.message ?? "Failed to create post"
+        );
+      }
+
+      setCaption("");
+      setIsExpanded(false);
+      onPostCreated?.();
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Something went wrong";
+      setError(message);
+    } finally {
+      setIsPosting(false);
+    }
   }
 
-  const selectedAudience = AUDIENCE_OPTIONS.find((o) => o.value === audience)!;
+  const selectedAudience = AUDIENCE_OPTIONS.find(
+    (o) => o.value === audience
+  )!;
   const SelectedAudienceIcon = selectedAudience.icon;
 
   return (
@@ -127,7 +206,9 @@ export default function CreatePost({ onPostCreated }: { onPostCreated?: () => vo
               {/* Audience selector */}
               <div className="relative inline-block">
                 <button
-                  onClick={() => setShowAudienceMenu(!showAudienceMenu)}
+                  onClick={() =>
+                    setShowAudienceMenu(!showAudienceMenu)
+                  }
                   className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-secondary"
                 >
                   <SelectedAudienceIcon className="h-3.5 w-3.5" />
@@ -147,13 +228,19 @@ export default function CreatePost({ onPostCreated }: { onPostCreated?: () => vo
                             setShowAudienceMenu(false);
                           }}
                           className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-surface-secondary ${
-                            audience === opt.value ? "bg-brand-50 text-brand-dark" : "text-text-secondary"
+                            audience === opt.value
+                              ? "bg-brand-50 text-brand-dark"
+                              : "text-text-secondary"
                           }`}
                         >
                           <OptIcon className="h-4 w-4 shrink-0" />
                           <div>
-                            <div className="text-sm font-medium">{opt.label}</div>
-                            <div className="text-xs text-text-muted">{opt.description}</div>
+                            <div className="text-sm font-medium">
+                              {opt.label}
+                            </div>
+                            <div className="text-xs text-text-muted">
+                              {opt.description}
+                            </div>
                           </div>
                         </button>
                       );
@@ -171,6 +258,19 @@ export default function CreatePost({ onPostCreated }: { onPostCreated?: () => vo
                 rows={3}
                 className="w-full resize-none rounded-lg bg-transparent text-[15px] leading-relaxed text-text-primary placeholder:text-text-muted focus:outline-none"
               />
+
+              {/* Error message */}
+              {error && (
+                <div className="flex items-center gap-2 rounded-lg bg-error/10 px-3 py-2 text-sm text-error">
+                  <span>{error}</span>
+                  <button
+                    onClick={() => setError("")}
+                    className="ml-auto shrink-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -189,7 +289,9 @@ export default function CreatePost({ onPostCreated }: { onPostCreated?: () => vo
               className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-surface-secondary ${color}`}
             >
               <Icon className="h-5 w-5" />
-              <span className="hidden sm:inline text-text-secondary font-medium">{label}</span>
+              <span className="hidden text-text-secondary font-medium sm:inline">
+                {label}
+              </span>
             </button>
           ))}
         </div>
@@ -200,6 +302,7 @@ export default function CreatePost({ onPostCreated }: { onPostCreated?: () => vo
               onClick={() => {
                 setCaption("");
                 setIsExpanded(false);
+                setError("");
               }}
               className="rounded-lg px-3 py-1.5 text-sm font-medium text-text-muted transition-colors hover:bg-surface-secondary hover:text-text-secondary"
             >
@@ -210,7 +313,9 @@ export default function CreatePost({ onPostCreated }: { onPostCreated?: () => vo
               disabled={!caption.trim() || isPosting}
               className="flex items-center gap-2 rounded-lg bg-brand px-4 py-1.5 text-sm font-semibold text-text-inverse transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isPosting && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isPosting && (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              )}
               Post
             </button>
           </div>

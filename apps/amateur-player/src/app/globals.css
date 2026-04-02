@@ -12,6 +12,17 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Shimmer animation for coming-soon preview areas */
+@keyframes shimmer {
+  0%,
+  100% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
