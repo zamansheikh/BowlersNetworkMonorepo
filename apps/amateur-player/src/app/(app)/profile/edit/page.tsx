@@ -18,6 +18,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import type { ProfileData } from "@/components/profile-header";
+import { uploadFile } from "@/lib/upload";
 
 /* -------------------------------------------------------------------------- */
 /*  Constants                                                                  */
@@ -237,55 +238,6 @@ function FieldLabel({
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Image upload helper                                                        */
-/* -------------------------------------------------------------------------- */
-
-async function uploadImage(
-  file: File,
-  profileEndpoint: string,
-  router: ReturnType<typeof useRouter>,
-): Promise<{ ok: boolean; url?: string; error?: string }> {
-  const token = getToken();
-  if (!token) {
-    router.push("/signin");
-    return { ok: false, error: "Not authenticated" };
-  }
-
-  /* 1. Initiate upload */
-  const initRes = await fetch(
-    `${BASE_URL}/api/cloud/upload/singlepart/requests/initiate`,
-    {
-      method: "POST",
-      headers: authHeaders(token),
-      body: JSON.stringify({ file_name: file.name, bucket: "cdn" }),
-    },
-  );
-
-  if (initRes.status === 401) {
-    router.push("/signin");
-    return { ok: false, error: "Session expired" };
-  }
-  if (!initRes.ok) return { ok: false, error: "Failed to initiate upload" };
-
-  const { presigned_url, public_url } = await initRes.json();
-
-  /* 2. PUT the file to the presigned URL */
-  const putRes = await fetch(presigned_url, {
-    method: "PUT",
-    headers: { "Content-Type": file.type },
-    body: file,
-  });
-
-  if (!putRes.ok) return { ok: false, error: "Failed to upload file" };
-
-  /* 3. Save the URL to the profile endpoint */
-  const saveRes = await apiPost(profileEndpoint, { url: public_url }, router);
-  if (!saveRes.ok) return { ok: false, error: saveRes.error ?? "Failed to save" };
-
-  return { ok: true, url: public_url };
-}
-
-/* -------------------------------------------------------------------------- */
 /*  Loading skeleton                                                           */
 /* -------------------------------------------------------------------------- */
 
@@ -446,7 +398,7 @@ export default function EditProfilePage() {
         setGender(data.gender.value ?? "");
         setGenderPublic(data.gender.is_public);
 
-        setBirthdate(data.birthdate.date_str ?? "");
+        setBirthdate(data.birthdate.date_of_birth ?? "");
         setBirthdatePublic(data.birthdate.is_public);
 
         setAddress(data.address?.location?.address ?? "");
@@ -474,6 +426,27 @@ export default function EditProfilePage() {
     load();
   }, [router]);
 
+  /* ---- Refresh completion percentage after any save ---- */
+  const refreshCompletion = useCallback(async () => {
+    const token = getToken();
+    if (!token || !profile) return;
+    try {
+      const res = await fetch(`${BASE_URL}/api/profile/completion`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProfile((prev) =>
+          prev
+            ? { ...prev, completion_percentage: data.completion_percentage, is_complete: data.is_complete }
+            : prev,
+        );
+      }
+    } catch {
+      /* silently ignore — non-critical */
+    }
+  }, [profile]);
+
   /* ---- Image change handlers ---- */
   const handleProfilePicChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -483,13 +456,19 @@ export default function EditProfilePage() {
     setProfilePicState("saving");
     setProfilePicError("");
 
-    const result = await uploadImage(file, "/api/profile/profile-picture", router);
-    if (result.ok) {
+    const upload = await uploadFile(file);
+    if (!upload.ok) {
+      setProfilePicState("error");
+      setProfilePicError(upload.error ?? "Upload failed");
+      return;
+    }
+    const save = await apiPost("/api/profile/profile-picture", { url: upload.url }, router);
+    if (save.ok) {
       setProfilePicState("success");
-      if (result.url) setProfilePicPreview(result.url);
+      if (upload.url) setProfilePicPreview(upload.url);
     } else {
       setProfilePicState("error");
-      setProfilePicError(result.error ?? "Upload failed");
+      setProfilePicError(save.error ?? "Failed to save");
     }
   };
 
@@ -501,13 +480,19 @@ export default function EditProfilePage() {
     setCoverPicState("saving");
     setCoverPicError("");
 
-    const result = await uploadImage(file, "/api/profile/cover-picture", router);
-    if (result.ok) {
+    const upload = await uploadFile(file);
+    if (!upload.ok) {
+      setCoverPicState("error");
+      setCoverPicError(upload.error ?? "Upload failed");
+      return;
+    }
+    const save = await apiPost("/api/profile/cover-picture", { url: upload.url }, router);
+    if (save.ok) {
       setCoverPicState("success");
-      if (result.url) setCoverPreview(result.url);
+      if (upload.url) setCoverPreview(upload.url);
     } else {
       setCoverPicState("error");
-      setCoverPicError(result.error ?? "Upload failed");
+      setCoverPicError(save.error ?? "Failed to save");
     }
   };
 
@@ -516,7 +501,7 @@ export default function EditProfilePage() {
     setBioState("saving");
     setBioError("");
     const r = await apiPost("/api/profile/bio", { content: bioContent, is_public: bioPublic }, router);
-    if (r.ok) setBioState("success");
+    if (r.ok) { setBioState("success"); refreshCompletion(); }
     else {
       setBioState("error");
       setBioError(r.error ?? "Failed to save bio");
@@ -527,7 +512,7 @@ export default function EditProfilePage() {
     setNicknameState("saving");
     setNicknameError("");
     const r = await apiPost("/api/profile/nickname", { name: nickname, is_public: nicknamePublic }, router);
-    if (r.ok) setNicknameState("success");
+    if (r.ok) { setNicknameState("success"); refreshCompletion(); }
     else {
       setNicknameState("error");
       setNicknameError(r.error ?? "Failed to save nickname");
@@ -538,7 +523,7 @@ export default function EditProfilePage() {
     setGenderState("saving");
     setGenderError("");
     const r = await apiPost("/api/profile/gender", { value: gender, is_public: genderPublic }, router);
-    if (r.ok) setGenderState("success");
+    if (r.ok) { setGenderState("success"); refreshCompletion(); }
     else {
       setGenderState("error");
       setGenderError(r.error ?? "Failed to save gender");
@@ -549,7 +534,7 @@ export default function EditProfilePage() {
     setBirthdateState("saving");
     setBirthdateError("");
     const r = await apiPost("/api/profile/birthdate", { date_of_birth: birthdate, is_public: birthdatePublic }, router);
-    if (r.ok) setBirthdateState("success");
+    if (r.ok) { setBirthdateState("success"); refreshCompletion(); }
     else {
       setBirthdateState("error");
       setBirthdateError(r.error ?? "Failed to save birthdate");
@@ -560,7 +545,7 @@ export default function EditProfilePage() {
     setAddressState("saving");
     setAddressError("");
     const r = await apiPost("/api/profile/address", { address, zip_code: zipCode, is_public: addressPublic }, router);
-    if (r.ok) setAddressState("success");
+    if (r.ok) { setAddressState("success"); refreshCompletion(); }
     else {
       setAddressState("error");
       setAddressError(r.error ?? "Failed to save address");
@@ -571,7 +556,7 @@ export default function EditProfilePage() {
     setBallStyleState("saving");
     setBallStyleError("");
     const r = await apiPost("/api/profile/ball-handling-style", { handedness, ball_carry: ballCarry, grip, is_public: ballStylePublic }, router);
-    if (r.ok) setBallStyleState("success");
+    if (r.ok) { setBallStyleState("success"); refreshCompletion(); }
     else {
       setBallStyleState("error");
       setBallStyleError(r.error ?? "Failed to save ball handling style");
@@ -582,7 +567,7 @@ export default function EditProfilePage() {
     setCenterState("saving");
     setCenterError("");
     const r = await apiPost("/api/profile/home-center", { center_id: centerId || undefined, center_name: centerName, is_public: centerPublic }, router);
-    if (r.ok) setCenterState("success");
+    if (r.ok) { setCenterState("success"); refreshCompletion(); }
     else {
       setCenterState("error");
       setCenterError(r.error ?? "Failed to save home center");

@@ -34,7 +34,7 @@ export interface ProfileMedia {
 export interface ProfileData {
   user: ProfileUser;
   gender: { value: string; is_public: boolean; is_added: boolean };
-  birthdate: { date_str: string; age: number; is_public: boolean; is_added: boolean };
+  birthdate: { date_of_birth: string | null; date_str: string; age: number; is_public: boolean; is_added: boolean };
   address: { location: { address: string }; is_public: boolean; is_added: boolean };
   home_center: { center_name: string; is_public: boolean; is_added: boolean };
   ball_handling_style: {
