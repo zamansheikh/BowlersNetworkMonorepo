@@ -21,6 +21,16 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
+            # Extra step Start: Ensure Node.js 20 is installed and used
+            set -e
+
+            # Ensure Node.js 20 is available (nvm)
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+            nvm install 20
+            nvm use 20
+            # Extra step end
+
             cd /var/www/BowlersNetworkMonorepo
 
             # Pull latest code
@@ -29,7 +39,7 @@ jobs:
             # Install dependencies
             pnpm install --frozen-lockfile
 
-            # Build amateur-player
+            # Build amateur-player (set -e ensures deploy stops here if build fails)
             pnpm --filter @bowlersnetwork/amateur-player build
 
             # Stop & delete the old PM2 process, then start fresh from ecosystem config
