@@ -257,7 +257,7 @@ async function uploadImage(
     {
       method: "POST",
       headers: authHeaders(token),
-      body: JSON.stringify({ file_name: file.name, bucket: "profiles" }),
+      body: JSON.stringify({ file_name: file.name, bucket: "cdn" }),
     },
   );
 

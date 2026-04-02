@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Menu, Search, Bell } from "lucide-react";
 
 /* -------------------------------------------------------------------------- */
@@ -76,17 +77,18 @@ export function Topbar({ sidebarCollapsed, onMobileMenuToggle }: TopbarProps) {
             <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-error ring-2 ring-surface" />
           </button>
 
-          {/* User avatar */}
-          <button
+          {/* User avatar — links to profile */}
+          <Link
+            href="/profile"
             className={[
               "flex h-9 w-9 items-center justify-center rounded-full",
               "bg-brand text-xs font-semibold text-white",
               "transition-shadow duration-150 hover:ring-2 hover:ring-brand/30",
             ].join(" ")}
-            aria-label="User menu"
+            aria-label="View profile"
           >
             JD
-          </button>
+          </Link>
         </div>
       </div>
     </header>
