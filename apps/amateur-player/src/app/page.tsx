@@ -93,18 +93,12 @@ const steps = [
 ];
 
 export default function LandingPage() {
-  const [ready, setReady] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
-    if (token) {
-      window.location.href = "/feed";
-      return;
-    }
-    setReady(true);
+    setIsLoggedIn(!!token);
   }, []);
-
-  if (!ready) return null;
 
   return (
     <div className="min-h-screen bg-surface text-text-primary">
@@ -136,19 +130,31 @@ export default function LandingPage() {
 
           {/* CTA buttons */}
           <div className="flex items-center gap-3">
-            <a
-              href="/signin"
-              className="hidden rounded-lg px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary sm:inline-flex"
-            >
-              Log In
-            </a>
-            <a
-              href="/signup"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-dark hover:shadow-md"
-            >
-              Get Started
-              <ChevronRight className="h-4 w-4" />
-            </a>
+            {isLoggedIn ? (
+              <a
+                href="/feed"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-dark hover:shadow-md"
+              >
+                Go to Feed
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            ) : (
+              <>
+                <a
+                  href="/signin"
+                  className="hidden rounded-lg px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:text-text-primary sm:inline-flex"
+                >
+                  Log In
+                </a>
+                <a
+                  href="/signup"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-dark hover:shadow-md"
+                >
+                  Get Started
+                  <ChevronRight className="h-4 w-4" />
+                </a>
+              </>
+            )}
           </div>
         </div>
       </nav>
