@@ -1,5 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalDotEnv": [".env"],
   "tasks": {
     "dev": {
       "cache": false,
@@ -7,7 +8,8 @@
     },
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "dotEnv": [".env"]
     },
     "lint": {
       "dependsOn": ["^build"]
