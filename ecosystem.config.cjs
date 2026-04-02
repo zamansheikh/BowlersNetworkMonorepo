@@ -7,8 +7,9 @@ module.exports = {
     {
       name: "amateur-player",
       cwd: "./apps/amateur-player",
-      script: "node_modules/.bin/next",
+      script: "node_modules/next/dist/bin/next",
       args: "start --port 4001",
+      interpreter: "node",
       env: {
         NODE_ENV: "production",
         PORT: 4001,
@@ -17,8 +18,9 @@ module.exports = {
     {
       name: "pro-player",
       cwd: "./apps/pro-player",
-      script: "node_modules/.bin/next",
+      script: "node_modules/next/dist/bin/next",
       args: "start --port 4002",
+      interpreter: "node",
       env: {
         NODE_ENV: "production",
         PORT: 4002,
@@ -27,8 +29,9 @@ module.exports = {
     {
       name: "bowling-center",
       cwd: "./apps/bowling-center",
-      script: "node_modules/.bin/next",
+      script: "node_modules/next/dist/bin/next",
       args: "start --port 4003",
+      interpreter: "node",
       env: {
         NODE_ENV: "production",
         PORT: 4003,
@@ -37,8 +40,9 @@ module.exports = {
     {
       name: "bowling-manufacturers",
       cwd: "./apps/bowling-manufacturers",
-      script: "node_modules/.bin/next",
+      script: "node_modules/next/dist/bin/next",
       args: "start --port 4004",
+      interpreter: "node",
       env: {
         NODE_ENV: "production",
         PORT: 4004,
@@ -47,8 +51,9 @@ module.exports = {
     {
       name: "tournament-director",
       cwd: "./apps/tournament-director",
-      script: "node_modules/.bin/next",
+      script: "node_modules/next/dist/bin/next",
       args: "start --port 4005",
+      interpreter: "node",
       env: {
         NODE_ENV: "production",
         PORT: 4005,
@@ -57,8 +62,9 @@ module.exports = {
     {
       name: "staffs",
       cwd: "./apps/staffs",
-      script: "node_modules/.bin/next",
+      script: "node_modules/next/dist/bin/next",
       args: "start --port 4006",
+      interpreter: "node",
       env: {
         NODE_ENV: "production",
         PORT: 4006,
@@ -67,8 +73,9 @@ module.exports = {
     {
       name: "bowl-ques",
       cwd: "./apps/bowl-ques",
-      script: "node_modules/.bin/next",
+      script: "node_modules/next/dist/bin/next",
       args: "start --port 4007",
+      interpreter: "node",
       env: {
         NODE_ENV: "production",
         PORT: 4007,
