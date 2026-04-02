@@ -238,7 +238,7 @@ export default function ProfileHeader({
             <div className="flex items-center gap-2 pt-16 sm:pt-18">
               {isOwn ? (
                 <Link
-                  href="/settings"
+                  href="/profile/edit"
                   className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-semibold text-text-primary transition-colors hover:bg-surface-secondary"
                 >
                   <Pencil size={16} />
@@ -373,7 +373,7 @@ export default function ProfileHeader({
                 </div>
               </div>
               <Link
-                href="/settings"
+                href="/profile/edit"
                 className="shrink-0 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-text-inverse transition-colors hover:bg-brand-dark"
               >
                 Complete your profile
