@@ -1,0 +1,6 @@
+{
+  "name": "@bowlersnetwork/config-tailwind",
+  "version": "0.0.0",
+  "private": true,
+  "files": ["theme.css"]
+}

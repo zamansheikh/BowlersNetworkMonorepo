@@ -1,0 +1,92 @@
+/* ============================================================================
+   BowlersNetwork — Design System Tokens (Tailwind CSS 4)
+   ============================================================================
+   Brand color system derived from product requirements.
+   All apps import this file in their globals.css.
+   ============================================================================ */
+
+@theme {
+  /* --- Brand Colors -------------------------------------------------------- */
+  --color-brand: #8BC342;
+  --color-brand-dark: #6fa332;
+  --color-brand-darker: #5a8928;
+  --color-brand-light: #a8d471;
+  --color-brand-lighter: #c5e5a0;
+  --color-brand-accent: #86D864;
+  --color-brand-50: #f4fbe8;
+  --color-brand-100: #e5f5cc;
+  --color-brand-200: #cceba0;
+  --color-brand-300: #a8d471;
+  --color-brand-400: #8BC342;
+  --color-brand-500: #6fa332;
+  --color-brand-600: #5a8928;
+  --color-brand-700: #456b1f;
+  --color-brand-800: #334f17;
+  --color-brand-900: #1e3310;
+
+  /* --- Nav Active (Purple accent) ------------------------------------------ */
+  --color-nav-active: #5145cd;
+  --color-nav-active-light: #7c6fe8;
+  --color-nav-active-bg: rgba(81, 69, 205, 0.1);
+
+  /* --- Surfaces ------------------------------------------------------------ */
+  --color-surface: #ffffff;
+  --color-surface-secondary: #f9fafb;
+  --color-surface-tertiary: #f3f4f6;
+  --color-surface-dark: #111B05;
+  --color-surface-darker: #0a0a0a;
+
+  /* --- Text ---------------------------------------------------------------- */
+  --color-text-primary: #1e2939;
+  --color-text-secondary: #364153;
+  --color-text-tertiary: #4a5565;
+  --color-text-muted: #99a1af;
+  --color-text-input: #101828;
+  --color-text-inverse: #ffffff;
+
+  /* --- Borders ------------------------------------------------------------- */
+  --color-border: #e5e7eb;
+  --color-border-medium: #d1d5db;
+  --color-border-subtle: #f3f4f6;
+  --color-border-focus: #8BC342;
+
+  /* --- Semantic ------------------------------------------------------------ */
+  --color-success: #22c55e;
+  --color-success-light: #dcfce7;
+  --color-error: #ef4444;
+  --color-error-light: #fef2f2;
+  --color-warning: #f59e0b;
+  --color-warning-light: #fffbeb;
+  --color-info: #3b82f6;
+  --color-info-light: #eff6ff;
+
+  /* --- Reactions ----------------------------------------------------------- */
+  --color-fire: #f97316;
+  --color-strike: #8BC342;
+  --color-clap: #eab308;
+  --color-wow: #a855f7;
+
+  /* --- Typography ---------------------------------------------------------- */
+  --font-family-sans: "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-family-mono: "Geist Mono", ui-monospace, monospace;
+
+  /* --- Spacing (for consistency) ------------------------------------------- */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* --- Shadows ------------------------------------------------------------- */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+
+  /* --- Layout -------------------------------------------------------------- */
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 72px;
+  --topbar-height: 64px;
+}

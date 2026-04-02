@@ -1,0 +1,34 @@
+import { getInitials } from "@bowlersnetwork/utils";
+
+interface AvatarProps {
+  src: string | null;
+  name: string;
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}
+
+const sizeMap = {
+  sm: "h-8 w-8 text-xs",
+  md: "h-10 w-10 text-sm",
+  lg: "h-14 w-14 text-lg",
+};
+
+export function Avatar({ src, name, size = "md", className = "" }: AvatarProps) {
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        className={`rounded-full object-cover ${sizeMap[size]} ${className}`}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={`rounded-full bg-brand text-text-on-brand flex items-center justify-center font-medium ${sizeMap[size]} ${className}`}
+    >
+      {getInitials(name)}
+    </div>
+  );
+}
