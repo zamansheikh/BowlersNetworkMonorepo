@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 4002 --turbopack",
+    "dev": "next dev --port 5002 --turbopack",
     "build": "next build",
-    "start": "next start --port 4002",
+    "start": "next start --port 5002",
     "lint": "next lint",
     "type-check": "tsc --noEmit"
   },
