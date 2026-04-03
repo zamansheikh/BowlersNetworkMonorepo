@@ -1,195 +1,317 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import {
   Bell,
   Heart,
   MessageSquare,
   UserPlus,
   Trophy,
-  Star,
-  BellOff,
-  Settings,
+  CheckCheck,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 
 /* -------------------------------------------------------------------------- */
-/*  Notification Type Icon                                                     */
+/*  API helpers                                                                */
 /* -------------------------------------------------------------------------- */
 
-interface NotificationTypeProps {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  count: number;
-  color: string;
-  bgColor: string;
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "https://backend.bowlersnetwork.com";
+
+function getToken() {
+  return localStorage.getItem("access_token");
 }
 
-function NotificationType({
-  icon: Icon,
-  label,
-  count,
-  color,
-  bgColor,
-}: NotificationTypeProps) {
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4 transition-colors hover:bg-surface-secondary">
-      <div
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${bgColor}`}
-      >
-        <Icon className={`h-4 w-4 ${color}`} />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium text-text-primary">{label}</div>
-      </div>
-      <span className="rounded-full bg-surface-tertiary px-2 py-0.5 text-xs font-medium text-text-muted">
-        {count}
-      </span>
-    </div>
-  );
+async function api(
+  path: string,
+  opts: { method?: string; body?: unknown } = {},
+) {
+  const token = getToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: opts.method ?? "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    ...(opts.body ? { body: JSON.stringify(opts.body) } : {}),
+  });
+
+  if (res.status === 401) {
+    localStorage.removeItem("access_token");
+    window.location.href = "/signin";
+    throw new Error("Session expired");
+  }
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.errors?.[0] ?? "Request failed");
+  }
+
+  return res.json();
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Empty Notification Item (skeleton)                                         */
+/*  Types                                                                      */
 /* -------------------------------------------------------------------------- */
 
-function EmptyNotificationRow() {
-  return (
-    <div className="flex items-start gap-3 rounded-xl border border-border-subtle bg-surface p-4">
-      <div className="h-9 w-9 shrink-0 rounded-full bg-surface-tertiary" />
-      <div className="flex-1 space-y-2">
-        <div className="h-3 w-3/4 rounded bg-surface-tertiary" />
-        <div className="h-2.5 w-1/2 rounded bg-border-subtle" />
-      </div>
-      <div className="h-2.5 w-12 rounded bg-border-subtle" />
-    </div>
-  );
+type Notification = {
+  id: number;
+  category: string;
+  message: string;
+  is_read: boolean;
+  actor: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    username: string;
+    profile_picture_url: string | null;
+  } | null;
+  target_type: string;
+  target_id: number | null;
+  data: Record<string, unknown>;
+  created_at: string;
+};
+
+type Filter = "all" | "unread" | "social" | "activity" | "system";
+
+/* -------------------------------------------------------------------------- */
+/*  Helpers                                                                    */
+/* -------------------------------------------------------------------------- */
+
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d`;
+}
+
+const CATEGORY_ICONS: Record<string, typeof Bell> = {
+  follow: UserPlus,
+  like: Heart,
+  comment: MessageSquare,
+  tournament: Trophy,
+};
+
+function getCategoryIcon(category: string) {
+  return CATEGORY_ICONS[category] ?? Bell;
 }
 
 /* -------------------------------------------------------------------------- */
 /*  Notifications Page                                                         */
 /* -------------------------------------------------------------------------- */
 
-const NOTIFICATION_TYPES: NotificationTypeProps[] = [
-  { icon: Heart, label: "Reactions", count: 0, color: "text-error", bgColor: "bg-error-light" },
-  { icon: MessageSquare, label: "Comments", count: 0, color: "text-info", bgColor: "bg-info-light" },
-  { icon: UserPlus, label: "New Followers", count: 0, color: "text-brand", bgColor: "bg-brand-50" },
-  { icon: Trophy, label: "Tournaments", count: 0, color: "text-warning", bgColor: "bg-warning-light" },
-  { icon: Star, label: "Achievements", count: 0, color: "text-nav-active", bgColor: "bg-nav-active-bg" },
-];
-
 export default function NotificationsPage() {
-  return (
-    <div className="mx-auto max-w-4xl space-y-8 px-4 py-6 sm:px-6 lg:px-8">
-      {/* Coming Soon Badge */}
-      <div className="flex justify-center">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-brand/10 px-4 py-1.5 text-sm font-semibold text-brand-dark">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-brand" />
-          </span>
-          Coming Soon
-        </span>
-      </div>
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<Filter>("all");
+  const [unreadCount, setUnreadCount] = useState(0);
 
+  const fetchNotifications = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ page_size: "50" });
+      if (filter === "unread") params.set("is_read", "false");
+      else if (filter !== "all") params.set("category", filter);
+
+      const data = await api(`/api/notifications?${params}`);
+      setNotifications(data.notifications ?? data.results ?? data);
+    } catch {
+      setNotifications([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [filter]);
+
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const data = await api("/api/notifications/unread-count");
+      setUnreadCount(data.unread_count ?? 0);
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    fetchUnreadCount();
+  }, [fetchNotifications, fetchUnreadCount]);
+
+  async function markRead(id: number) {
+    try {
+      await api(`/api/notifications/${id}/read`, { method: "POST" });
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
+      );
+      setUnreadCount((c) => Math.max(0, c - 1));
+    } catch { /* ignore */ }
+  }
+
+  async function markAllRead() {
+    try {
+      await api("/api/notifications/read-all", { method: "POST" });
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+    } catch { /* ignore */ }
+  }
+
+  async function deleteNotification(id: number) {
+    try {
+      await api(`/api/notifications/${id}`, { method: "DELETE" });
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+    } catch { /* ignore */ }
+  }
+
+  async function clearAll() {
+    try {
+      await api("/api/notifications/clear-all", { method: "POST" });
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch { /* ignore */ }
+  }
+
+  const FILTERS: { value: Filter; label: string }[] = [
+    { value: "all", label: "All" },
+    { value: "unread", label: `Unread${unreadCount > 0 ? ` (${unreadCount})` : ""}` },
+    { value: "social", label: "Social" },
+    { value: "activity", label: "Activity" },
+    { value: "system", label: "System" },
+  ];
+
+  return (
+    <div className="mx-auto max-w-3xl space-y-5 px-4 py-6 sm:px-6">
       {/* Header */}
-      <div className="text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand/10">
-          <Bell className="h-8 w-8 text-brand" />
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-text-primary">Notifications</h1>
+          {unreadCount > 0 && (
+            <p className="mt-1 text-sm text-text-secondary">
+              {unreadCount} unread
+            </p>
+          )}
         </div>
-        <h1 className="text-3xl font-bold tracking-tight text-text-primary sm:text-4xl">
-          Notifications
-        </h1>
-        <p className="mx-auto mt-3 max-w-lg text-base text-text-secondary">
-          Stay updated on reactions, comments, follows, and more.
-        </p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={markAllRead}
+            disabled={unreadCount === 0}
+            className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-secondary disabled:opacity-40"
+          >
+            <CheckCheck size={16} />
+            Mark all read
+          </button>
+          <button
+            onClick={clearAll}
+            disabled={notifications.length === 0}
+            className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-surface-secondary hover:text-error disabled:opacity-40"
+          >
+            <Trash2 size={16} />
+            Clear
+          </button>
+        </div>
       </div>
 
       {/* Filter tabs */}
-      <div className="flex justify-center gap-1">
-        {["All", "Mentions", "Reactions", "Follows", "System"].map((tab, i) => (
+      <div className="flex items-center gap-1 border-b border-border">
+        {FILTERS.map((f) => (
           <button
-            key={tab}
-            disabled
-            className={[
-              "rounded-lg px-3 py-1.5 text-xs font-medium",
-              i === 0
-                ? "bg-brand/10 text-brand-dark"
-                : "text-text-muted hover:bg-surface-tertiary",
-            ].join(" ")}
+            key={f.value}
+            onClick={() => setFilter(f.value)}
+            className={`px-3 py-2.5 text-sm font-medium transition-colors ${
+              filter === f.value
+                ? "border-b-2 border-brand text-brand"
+                : "text-text-muted hover:text-text-secondary"
+            }`}
           >
-            {tab}
+            {f.label}
           </button>
         ))}
       </div>
 
-      {/* Preview Area */}
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-surface-secondary p-6 shadow-sm sm:p-8">
-        {/* Shimmer overlay */}
-        <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-r from-brand/0 via-brand/10 to-brand/0 animate-[shimmer_3s_ease-in-out_infinite]" />
-
-        <div className="relative space-y-6">
-          {/* Notification categories */}
-          <div>
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-text-muted">
-              Notification Categories
-            </h3>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {NOTIFICATION_TYPES.map((t) => (
-                <NotificationType key={t.label} {...t} />
-              ))}
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className="flex items-center gap-4">
-            <div className="h-px flex-1 bg-border" />
-            <span className="text-xs font-medium text-text-muted">
-              Recent Notifications
-            </span>
-            <div className="h-px flex-1 bg-border" />
-          </div>
-
-          {/* Empty state */}
-          <div className="space-y-2">
-            {[1, 2, 3].map((i) => (
-              <EmptyNotificationRow key={i} />
-            ))}
-          </div>
-
-          {/* No notifications message */}
-          <div className="flex flex-col items-center py-6 text-center">
-            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-surface-tertiary">
-              <BellOff className="h-7 w-7 text-text-muted" />
-            </div>
-            <div className="text-sm font-semibold text-text-secondary">
-              No notifications yet
-            </div>
-            <div className="mt-1 max-w-xs text-xs text-text-muted">
-              When you get reactions, comments, new followers, and tournament
-              updates, they&apos;ll show up here.
-            </div>
-          </div>
+      {/* Notifications list */}
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="h-7 w-7 animate-spin text-brand" />
         </div>
-      </div>
+      ) : notifications.length === 0 ? (
+        <div className="rounded-xl border border-border bg-surface py-16 text-center">
+          <Bell className="mx-auto mb-3 h-10 w-10 text-text-muted" />
+          <p className="text-sm text-text-muted">No notifications yet</p>
+        </div>
+      ) : (
+        <div className="space-y-1">
+          {notifications.map((n) => {
+            const Icon = getCategoryIcon(n.category);
+            const initials = n.actor
+              ? `${n.actor.first_name?.[0] ?? ""}${n.actor.last_name?.[0] ?? ""}`
+              : "";
 
-      {/* Quick actions */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        {[
-          { icon: Bell, label: "Push Alerts", desc: "Real-time mobile notifications" },
-          { icon: Settings, label: "Custom Filters", desc: "Choose what matters to you" },
-          { icon: BellOff, label: "Quiet Hours", desc: "Pause notifications on schedule" },
-        ].map((f) => (
-          <div
-            key={f.label}
-            className="flex items-center gap-3 rounded-xl border border-border bg-surface p-4 shadow-xs"
-          >
-            <f.icon className="h-5 w-5 shrink-0 text-brand" />
-            <div>
-              <div className="text-sm font-semibold text-text-primary">{f.label}</div>
-              <div className="text-xs text-text-muted">{f.desc}</div>
-            </div>
-          </div>
-        ))}
-      </div>
+            return (
+              <div
+                key={n.id}
+                onClick={() => !n.is_read && markRead(n.id)}
+                className={`flex items-start gap-3 rounded-xl border p-4 transition-colors cursor-pointer ${
+                  n.is_read
+                    ? "border-transparent bg-surface hover:bg-surface-secondary"
+                    : "border-brand/20 bg-brand/5 hover:bg-brand/10"
+                }`}
+              >
+                {/* Actor avatar or category icon */}
+                {n.actor?.profile_picture_url ? (
+                  <img
+                    src={n.actor.profile_picture_url}
+                    alt=""
+                    className="h-10 w-10 shrink-0 rounded-full object-cover"
+                  />
+                ) : n.actor ? (
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-semibold text-white">
+                    {initials}
+                  </div>
+                ) : (
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-tertiary">
+                    <Icon size={18} className="text-text-muted" />
+                  </div>
+                )}
+
+                {/* Content */}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-text-primary">
+                    {n.actor && (
+                      <span className="font-semibold">
+                        {n.actor.first_name} {n.actor.last_name}{" "}
+                      </span>
+                    )}
+                    {n.message}
+                  </p>
+                  <p className="mt-0.5 text-xs text-text-muted">{timeAgo(n.created_at)}</p>
+                </div>
+
+                {/* Unread dot + delete */}
+                <div className="flex items-center gap-2">
+                  {!n.is_read && (
+                    <span className="h-2.5 w-2.5 rounded-full bg-brand" />
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteNotification(n.id);
+                    }}
+                    className="rounded p-1 text-text-muted opacity-0 transition-opacity hover:text-error group-hover:opacity-100"
+                    style={{ opacity: undefined }}
+                    onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+                    onMouseLeave={(e) => (e.currentTarget.style.opacity = "0")}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

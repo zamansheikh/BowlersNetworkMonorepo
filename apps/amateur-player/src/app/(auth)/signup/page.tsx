@@ -39,6 +39,7 @@ export default function SignUpPage() {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   // OTP
@@ -58,7 +59,8 @@ export default function SignUpPage() {
       !lastName.trim() ||
       !email.trim() ||
       !username.trim() ||
-      !password
+      !password ||
+      !dateOfBirth
     ) {
       setError("All fields are required.");
       return;
@@ -120,6 +122,7 @@ export default function SignUpPage() {
             email: email.trim(),
             username: username.trim(),
             password,
+            date_of_birth: dateOfBirth,
           },
           verification_code: otp.trim(),
         }),
@@ -376,6 +379,23 @@ export default function SignUpPage() {
                         )}
                       </button>
                     </div>
+                  </div>
+
+                  {/* Date of Birth */}
+                  <div>
+                    <label
+                      htmlFor="dob"
+                      className="mb-1.5 block text-sm font-medium text-text-primary"
+                    >
+                      Date of Birth
+                    </label>
+                    <input
+                      id="dob"
+                      type="date"
+                      value={dateOfBirth}
+                      onChange={(e) => setDateOfBirth(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-sm text-text-input placeholder:text-text-muted outline-none transition-colors focus:border-border-focus focus:ring-2 focus:ring-brand/20"
+                    />
                   </div>
 
                   <button
